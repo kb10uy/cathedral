@@ -1,2 +1,2 @@
 [workspace]
-members = ["cathedral", "table-importer", "dropkick"]
+members = ["cathedral", "fascination", "dropkick", "lyricism"]
