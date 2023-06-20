@@ -1,2 +1,8 @@
 [workspace]
 members = ["cathedral", "fascination", "dropkick", "lyricism"]
+
+[workspace.dependencies]
+anyhow = "1.0.71"
+clap = { version = "4.3.4", features = ["derive"] }
+dropkick = { path = "./dropkick" }
+once_cell = "1.18.0"
