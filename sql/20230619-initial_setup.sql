@@ -1,12 +1,12 @@
 CREATE TABLE "versions" (
-    "id" SERIAL PRIMARY KEY,
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
     "name" TEXT NOT NULL,
     "number" INTEGER NOT NULL,
     "abbrev" TEXT NOT NULL
 );
 
 CREATE TABLE "songs" (
-    "id" SERIAL PRIMARY KEY,
+    "id" INTEGER PRIMARY KEY AUTOINCREMENT,
     "version_id" INTEGER NOT NULL REFERENCES "versions"("id"),
     "genre" TEXT NOT NULL,
     "title" TEXT NOT NULL,

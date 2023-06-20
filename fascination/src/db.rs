@@ -19,7 +19,7 @@ pub async fn insert_version(pool: &SqlitePool, version: &Version) -> Result<i64>
         r#"
         INSERT INTO "versions" ("name", "number", "abbrev")
         VALUES (?, ?, ?)
-        RETURNING "versions"."id";
+        RETURNING "id";
         "#,
     )
     .bind(&version.name)
@@ -28,7 +28,7 @@ pub async fn insert_version(pool: &SqlitePool, version: &Version) -> Result<i64>
     .fetch_one(pool)
     .await?;
 
-    Ok(returned_id.get(0))
+    Ok(returned_id.get("id"))
 }
 
 pub async fn insert_song(
@@ -41,7 +41,7 @@ pub async fn insert_song(
         r#"
         INSERT INTO "songs" ("version_id", "genre", "title", "artist", "min_bpm", "max_bpm", "unlock_info")
         VALUES (?, ?, ?, ?, ?, ?, ?)
-        RETURNING "songs"."id";
+        RETURNING "id";
         "#,
     )
     .bind(version_id)
@@ -54,7 +54,7 @@ pub async fn insert_song(
     .fetch_one(pool)
     .await?;
 
-    Ok(returned_id.get(0))
+    Ok(returned_id.get("id"))
 }
 
 pub async fn insert_diffs(pool: &SqlitePool, song_id: i64, diffs: &[Diff]) -> Result<()> {

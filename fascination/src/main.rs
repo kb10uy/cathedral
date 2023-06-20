@@ -53,6 +53,8 @@ async fn main() -> Result<()> {
             1 => match parse_subheader(&tds)? {
                 Subheader::Version(v) => {
                     let id = insert_version(&sqlite_pool, &v).await?;
+                    println!("version inserted: {} ({id})", v.name);
+
                     version_id = Some(id);
                     event = None;
                 }
@@ -62,7 +64,6 @@ async fn main() -> Result<()> {
             },
             13 => {
                 let (song, diffs) = parse_song_tr(&tds)?;
-                println!("{}", song.title);
 
                 let song_id = insert_song(
                     &sqlite_pool,
@@ -71,7 +72,8 @@ async fn main() -> Result<()> {
                     &song,
                 )
                 .await?;
-                println!("song inserted");
+                println!("song inserted: {} ({song_id})", song.title);
+
                 insert_diffs(&sqlite_pool, song_id, &diffs).await?;
                 println!("diff inserted");
             }

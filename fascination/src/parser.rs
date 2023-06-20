@@ -141,7 +141,7 @@ pub fn parse_version(version_str: &str) -> Result<Version> {
             let number_and_name = &since_red[15..].trim();
             let number_end = number_and_name.find(' ').expect("should have space");
             let abbrev = number_and_name[number_end..].trim();
-            let number = abbrev[..number_end]
+            let number = number_and_name[..number_end]
                 .trim()
                 .parse()
                 .context("RED~ parse error")?;
