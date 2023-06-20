@@ -1,6 +1,7 @@
 CREATE TABLE "versions" (
     "id" SERIAL PRIMARY KEY,
     "name" TEXT NOT NULL,
+    "number" INTEGER NOT NULL,
     "abbrev" TEXT NOT NULL
 );
 
@@ -15,7 +16,11 @@ CREATE TABLE "songs" (
     "unlock_info" TEXT NULL
 );
 
-CREATE TABLE "diffs" (
+CREATE TABLE "play_sides" (
+    "side" TEXT NOT NULL PRIMARY KEY
+);
+
+CREATE TABLE "difficulties" (
     "name" TEXT NOT NULL PRIMARY KEY,
     "abbrev" TEXT NOT NULL,
     "color" TEXT NOT NULL
@@ -29,16 +34,22 @@ CREATE TABLE "bss_types" (
     "type" TEXT NOT NULL PRIMARY KEY
 );
 
-CREATE TABLE "scores" (
+CREATE TABLE "diffs" (
     "song_id" INTEGER NOT NULL REFERENCES "songs"("id"),
-    "diff" INTEGER NOT NULL REFERENCES "diffs"("name"),
+    "play_side" INTEGER NOT NULL REFERENCES "play_sides"("side"),
+    "difficulty" INTEGER NOT NULL REFERENCES "difficulties"("name"),
     "level" INTEGER NOT NULL,
     "notes" INTEGER NULL,
     "cn_type" TEXT NULL REFERENCES "cn_types"("type"),
     "bss_type" TEXT NULL REFERENCES "bss_types"("type")
 );
 
-INSERT INTO "diffs" ("name", "abbrev", "color")
+INSERT INTO "play_sides" ("side")
+VALUES
+    ('SP'),
+    ('DP');
+
+INSERT INTO "difficulties" ("name", "abbrev", "color")
 VALUES
     ('BEGINNER', 'B', '#2eff7e'),
     ('NORMAL', 'N', '#2e7bff'),

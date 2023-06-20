@@ -3,7 +3,7 @@ use crate::data::{Diff, Difficulty, NoteType, PlaySide, ScratchType, Song, Subhe
 use anyhow::{ensure, Context, Result};
 use scraper::ElementRef;
 
-pub fn parse_song_tr(tds: &[ElementRef]) -> Result<Song> {
+pub fn parse_song_tr(tds: &[ElementRef]) -> Result<(Song, Vec<Diff>)> {
     ensure!(tds.len() == 13, "malformed row");
     // SPB SPN SPH SPA SPL | DPN DPH DPA DPL | BPM GENRE TITLE ARTIST
     let raw_diffs = vec![
@@ -36,14 +36,16 @@ pub fn parse_song_tr(tds: &[ElementRef]) -> Result<Song> {
     let title = tds[11].text().next().unwrap_or_default().trim().to_string();
     let artist = tds[12].text().next().unwrap_or_default().trim().to_string();
 
-    Ok(Song {
-        genre,
-        title,
-        artist,
-        min_bpm,
-        max_bpm,
+    Ok((
+        Song {
+            genre,
+            title,
+            artist,
+            min_bpm,
+            max_bpm,
+        },
         diffs,
-    })
+    ))
 }
 
 fn parse_diff_td(play_side: PlaySide, difficulty: Difficulty, td: ElementRef) -> Option<Diff> {
