@@ -3,13 +3,15 @@ const SIGN_CHARS: &[char] = &[
     '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~',
 ];
 
+const LEET_PAIRS: &[(char, char)] = &[('e', '3'), ('o', '0'), ('a', 'V')];
+
 pub fn query_insert(c: char) -> usize {
     if c.is_ascii_whitespace() {
         1
     } else if SIGN_CHARS.contains(&c) {
         2
     } else {
-        3
+        7
     }
 }
 
@@ -28,8 +30,10 @@ pub fn query_replace(qc: char, tc: char) -> usize {
         1
     } else if qc.to_ascii_lowercase() == tc {
         2
-    } else {
+    } else if LEET_PAIRS.contains(&(qc, tc)) {
         3
+    } else {
+        4
     }
 }
 

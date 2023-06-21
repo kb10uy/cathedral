@@ -11,5 +11,5 @@ clap = { workspace = true }
 dropkick = { workspace = true }
 once_cell = { workspace = true }
 scraper = "0.16.0"
-sqlx = { version = "0.6.3", features = ["sqlite", "runtime-tokio-native-tls"] }
-tokio = { version = "1.28.2", features = ["full"] }
+sqlx = { workspace = true }
+tokio = { workspace = true }
