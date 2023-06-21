@@ -33,7 +33,12 @@ pub fn parse_song_tr(tds: &[ElementRef]) -> Result<(Song, Vec<Diff>)> {
         }
     };
     let genre = tds[10].text().next().unwrap_or_default().trim().to_string();
-    let title = tds[11].text().next().unwrap_or_default().trim().to_string();
+    let title = tds[11]
+        .text()
+        .collect::<Vec<_>>()
+        .concat()
+        .trim()
+        .to_string();
     let artist = tds[12].text().next().unwrap_or_default().trim().to_string();
 
     Ok((
@@ -114,10 +119,10 @@ pub fn parse_subheader(tds: &[ElementRef]) -> Result<Subheader> {
 pub fn parse_version(version_str: &str) -> Result<Version> {
     let (version_abbrev, number) = match version_str {
         // no subtitle
-        "beatmania IIDX" => (version_str, 1),
+        "beatmania IIDX" => ("1st style", 1),
 
         // just "substream"
-        ss if ss.contains("substream") => ("substream", 1),
+        substream if substream.contains("substream") => ("substream", 1),
 
         // 2nd ~ 10th style
         // "beatmania IIDX ".len() == 15
