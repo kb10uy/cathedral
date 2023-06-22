@@ -1,11 +1,12 @@
 mod cli;
 mod db;
+mod schema;
 mod web;
 
 use crate::{
     cli::Arguments,
     db::{fetch_title_pair, open_sqlite_file},
-    web::search_songs,
+    web::{songs_search, songs_show},
 };
 
 use std::sync::Arc;
@@ -36,7 +37,8 @@ async fn main() -> Result<()> {
     };
 
     let router = Router::new()
-        .route("/search", get(search_songs))
+        .route("/songs/search", get(songs_search))
+        .route("/songs/show", get(songs_show))
         .with_state(shared_data);
 
     Server::bind(&args.bind)

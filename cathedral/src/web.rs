@@ -1,4 +1,8 @@
-use crate::{db::fetch_songs_summary, SharedData};
+use crate::{
+    db::{fetch_diffs, fetch_song, fetch_song_summaries},
+    schema::{Diff, Song},
+    SharedData,
+};
 
 use std::collections::BinaryHeap;
 
@@ -17,22 +21,23 @@ pub struct ErrorResult {
 }
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct SearchQuery {
+pub struct SongsSearchQuery {
     q: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct SearchResult {
+pub struct SongsSearchResult {
     version_abbrev: String,
     genre: String,
     title: String,
     artist: String,
 }
 
-pub async fn search_songs(
+/// GET /songs/search?q=...
+pub async fn songs_search(
     State(sd): State<SharedData>,
-    Query(query): Query<SearchQuery>,
-) -> AxumResult<Json<Vec<SearchResult>>> {
+    Query(query): Query<SongsSearchQuery>,
+) -> AxumResult<Json<Vec<SongsSearchResult>>> {
     let searcher = Lyricism::new(query_insert, query_delete, query_replace, query_substring);
     let mut candidates = BinaryHeap::new();
 
@@ -46,16 +51,15 @@ pub async fn search_songs(
     // collect as most-relevant first
     let mut candidate_pairs: Vec<_> = candidates.into_iter().collect();
     candidate_pairs.sort_by_key(|(d, _)| *d);
-    println!("{candidate_pairs:?}");
     let candidate_ids: Vec<_> = candidate_pairs.iter().map(|(_, id)| *id).collect();
 
-    let rows = fetch_songs_summary(&sd.sqlite_pool, &candidate_ids)
+    let rows = fetch_song_summaries(&sd.sqlite_pool, &candidate_ids)
         .await
         .map_err(pass_sqlx_error)?;
     let result_rows = candidate_ids
         .into_iter()
         .flat_map(|cid| rows.iter().find(|r| r.id == cid))
-        .map(|r| SearchResult {
+        .map(|r| SongsSearchResult {
             version_abbrev: r.version_abbrev.to_string(),
             genre: r.genre.to_string(),
             title: r.title.to_string(),
@@ -66,8 +70,41 @@ pub async fn search_songs(
     Ok(Json(result_rows))
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct SongsShowQuery {
+    id: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SongsShowResult {
+    song: Song,
+    diffs: Vec<Diff>,
+}
+
+/// GET /songs/show?id=...
+pub async fn songs_show(
+    State(sd): State<SharedData>,
+    Query(query): Query<SongsShowQuery>,
+) -> AxumResult<Json<SongsShowResult>> {
+    let song = fetch_song(&sd.sqlite_pool, query.id)
+        .await
+        .map_err(pass_sqlx_error)?
+        .ok_or_else(|| pass_not_found_error(&format!("song id {}", query.id)))?;
+    let diffs = fetch_diffs(&sd.sqlite_pool, song.id)
+        .await
+        .map_err(pass_sqlx_error)?;
+
+    Ok(Json(SongsShowResult { song, diffs }))
+}
+
 fn pass_sqlx_error(err: SqlxError) -> Json<ErrorResult> {
     Json(ErrorResult {
         reason: err.to_string(),
+    })
+}
+
+fn pass_not_found_error(subreason: &str) -> Json<ErrorResult> {
+    Json(ErrorResult {
+        reason: format!("not found {subreason}"),
     })
 }
