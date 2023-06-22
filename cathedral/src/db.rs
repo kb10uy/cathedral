@@ -82,8 +82,8 @@ pub async fn fetch_diffs(pool: &SqlitePool, song_id: i64) -> SqlxResult<Vec<Diff
             diffs.play_side as play_side,
             diffs.difficulty as difficulty,
             diffs.level as level,
-            diffs.cn_type as cn_type,
-            diffs.bss_type as bss_type
+            diffs.cn_type as note_type,
+            diffs.bss_type as scratch_type
         FROM diffs
         WHERE diffs.song_id = ?;
         "#,

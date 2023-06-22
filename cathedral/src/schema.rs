@@ -25,12 +25,12 @@ pub struct Song {
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Diff {
-    pub id: i64,
+    pub song_id: i64,
     pub play_side: PlaySide,
     pub difficulty: Difficulty,
     pub level: i64,
-    pub note_type: NoteType,
-    pub scratch_type: ScratchType,
+    pub note_type: Option<NoteType>,
+    pub scratch_type: Option<ScratchType>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, SqlxType, Serialize)]

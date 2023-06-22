@@ -72,10 +72,13 @@ async fn main() -> Result<()> {
                     &song,
                 )
                 .await?;
-                println!("song inserted: {} ({song_id})", song.title);
 
                 insert_diffs(&sqlite_pool, song_id, &diffs).await?;
-                println!("diff inserted");
+                println!(
+                    "song inserted: {} ({song_id}), {} diffs",
+                    song.title,
+                    diffs.len()
+                );
             }
             _ => continue,
         }

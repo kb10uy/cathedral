@@ -76,4 +76,4 @@ CREATE INDEX "diffs_foreign_songs" ON "diffs" ("song_id");
 CREATE INDEX "diffs_foreign_play_sides" ON "diffs" ("play_side");
 CREATE INDEX "diffs_foreign_difficulties" ON "diffs" ("difficulty");
 CREATE INDEX "diffs_difficulties" ON "diffs" ("play_side", "difficulty");
-CREATE INDEX "diffs_full" ON "diffs" ("play_side", "difficulty", "levels");
+CREATE INDEX "diffs_full" ON "diffs" ("play_side", "difficulty", "level");

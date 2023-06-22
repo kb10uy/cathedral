@@ -28,6 +28,7 @@ pub struct SongsSearchQuery {
 #[derive(Debug, Clone, Serialize)]
 pub struct SongsSearchResult {
     version_abbrev: String,
+    id: i64,
     genre: String,
     title: String,
     artist: String,
@@ -61,6 +62,7 @@ pub async fn songs_search(
         .flat_map(|cid| rows.iter().find(|r| r.id == cid))
         .map(|r| SongsSearchResult {
             version_abbrev: r.version_abbrev.to_string(),
+            id: r.id,
             genre: r.genre.to_string(),
             title: r.title.to_string(),
             artist: r.artist.to_string(),
@@ -99,12 +101,12 @@ pub async fn songs_show(
 
 fn pass_sqlx_error(err: SqlxError) -> Json<ErrorResult> {
     Json(ErrorResult {
-        reason: err.to_string(),
+        reason: format!("db error: {}", err),
     })
 }
 
 fn pass_not_found_error(subreason: &str) -> Json<ErrorResult> {
     Json(ErrorResult {
-        reason: format!("not found {subreason}"),
+        reason: format!("not found: {subreason}"),
     })
 }
