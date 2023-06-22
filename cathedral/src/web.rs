@@ -162,7 +162,7 @@ pub async fn mattermost_enqueue(
             .map_err(pass_sqlx_error)?;
 
         attachments.push(json!({
-            "author_name": version.name,
+            "footer": version.name,
             "title": format!("{} / {}", song.title, song.artist),
             "fields": [
                 {
