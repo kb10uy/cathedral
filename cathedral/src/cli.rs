@@ -8,4 +8,7 @@ pub struct Arguments {
 
     #[clap(short, long, default_value = "0.0.0.0:3000")]
     pub bind: SocketAddr,
+
+    #[clap(short, long, default_value = "")]
+    pub mattermost_token: String,
 }

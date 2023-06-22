@@ -4,6 +4,13 @@ use serde::Serialize;
 use sqlx::{FromRow, Type as SqlxType};
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
+pub struct Version {
+    pub id: i64,
+    pub name: String,
+    pub abbrev: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct SongSummary {
     pub id: i64,
     pub version_abbrev: String,
@@ -15,6 +22,7 @@ pub struct SongSummary {
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Song {
     pub id: i64,
+    pub version_id: i64,
     pub genre: String,
     pub title: String,
     pub artist: String,
@@ -61,6 +69,18 @@ pub enum Difficulty {
     Hyper,
     Another,
     Leggendaria,
+}
+
+impl Difficulty {
+    pub fn to_emoji_str(self) -> &'static str {
+        match self {
+            Difficulty::Beginner => ":diff-b:",
+            Difficulty::Normal => ":diff-n:",
+            Difficulty::Hyper => ":diff-h:",
+            Difficulty::Another => ":diff-a:",
+            Difficulty::Leggendaria => ":diff-l:",
+        }
+    }
 }
 
 impl Display for Difficulty {

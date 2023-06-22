@@ -12,12 +12,17 @@ use crate::{
 use std::sync::Arc;
 
 use anyhow::Result;
-use axum::{routing::get, Router, Server};
+use axum::{
+    routing::{get, post},
+    Router, Server,
+};
 use clap::Parser;
 use sqlx::SqlitePool;
+use web::mattermost_enqueue;
 
 #[derive(Debug, Clone)]
 pub struct SharedData {
+    webhook_token: String,
     candidates_count: usize,
     sqlite_pool: SqlitePool,
     id_song_pairs: Arc<[(i64, String)]>,
@@ -31,6 +36,7 @@ async fn main() -> Result<()> {
     let sqlite_pool = open_sqlite_file(&args.sqlite_filename).await?;
     let id_song_pairs = fetch_title_pair(&sqlite_pool).await?;
     let shared_data = SharedData {
+        webhook_token: args.mattermost_token,
         candidates_count: 5,
         sqlite_pool,
         id_song_pairs: id_song_pairs.into(),
@@ -39,6 +45,7 @@ async fn main() -> Result<()> {
     let router = Router::new()
         .route("/songs/search", get(songs_search))
         .route("/songs/show", get(songs_show))
+        .route("/mattermost/enqueue", post(mattermost_enqueue))
         .with_state(shared_data);
 
     Server::bind(&args.bind)
