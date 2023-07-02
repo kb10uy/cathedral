@@ -1,4 +1,4 @@
-use crate::schema::{Diff, Song, SongSummary, Version};
+use crate::db::schema::{Diff, Song, SongSummary, Version};
 
 use std::path::Path;
 

@@ -1,11 +1,10 @@
 mod cli;
 mod db;
-mod schema;
 mod web;
 
 use crate::{
     cli::Arguments,
-    db::{fetch_title_pair, open_sqlite_file},
+    db::function::{fetch_title_pair, open_sqlite_file},
     web::action::{mattermost_enqueue, songs_search, songs_show},
 };
 

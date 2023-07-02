@@ -1,4 +1,4 @@
-use crate::schema::{Diff, Song};
+use crate::db::schema::{Diff, Song};
 
 use serde::{Deserialize, Serialize};
 

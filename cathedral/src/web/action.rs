@@ -1,6 +1,8 @@
 use crate::{
-    db::{fetch_diffs, fetch_song, fetch_song_summaries, fetch_version},
-    schema::PlaySide,
+    db::{
+        function::{fetch_diffs, fetch_song, fetch_song_summaries, fetch_version},
+        schema::PlaySide,
+    },
     web::{error::*, schema::*},
     SharedData,
 };
