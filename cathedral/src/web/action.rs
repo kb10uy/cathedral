@@ -1,6 +1,7 @@
 use crate::{
     db::{fetch_diffs, fetch_song, fetch_song_summaries, fetch_version},
-    schema::{Diff, PlaySide, Song},
+    schema::PlaySide,
+    web::{error::*, schema::*},
     SharedData,
 };
 
@@ -8,34 +9,11 @@ use std::collections::BinaryHeap;
 
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
-    response::{ErrorResponse, IntoResponse, Response, Result as AxumResult},
+    response::Result as AxumResult,
     Form, Json,
 };
 use lyricism::{query_delete, query_insert, query_replace, query_substring, Lyricism};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-use sqlx::Error as SqlxError;
 use tracing::warn;
-
-#[derive(Debug, Clone, Serialize)]
-pub struct ErrorResult {
-    reason: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct SongsSearchQuery {
-    q: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct SongsSearchResponse {
-    version_abbrev: String,
-    id: i64,
-    genre: String,
-    title: String,
-    artist: String,
-}
 
 /// GET /songs/search?q=...
 pub async fn songs_search(
@@ -75,17 +53,6 @@ pub async fn songs_search(
     Ok(Json(result_rows))
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct SongsShowQuery {
-    id: i64,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct SongsShowResponse {
-    song: Song,
-    diffs: Vec<Diff>,
-}
-
 /// GET /songs/show?id=...
 pub async fn songs_show(
     State(sd): State<SharedData>,
@@ -102,23 +69,17 @@ pub async fn songs_show(
     Ok(Json(SongsShowResponse { song, diffs }))
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct MattermostEnqueueForm {
-    token: String,
-    text: String,
-}
-
 /// GET /mattermost/enqueue
 pub async fn mattermost_enqueue(
     State(sd): State<SharedData>,
     Form(form): Form<MattermostEnqueueForm>,
-) -> AxumResult<Response> {
+) -> AxumResult<Json<Option<MattermostEnqueueResult>>> {
     if sd.webhook_token != form.token {
         warn!("Invalid token arrived");
         return Err(pass_token_error());
     }
     if form.text.starts_with("//") {
-        return Ok(().into_response());
+        return Ok(Json(None));
     }
 
     let searcher = Lyricism::new(query_insert, query_delete, query_replace, query_substring);
@@ -161,66 +122,35 @@ pub async fn mattermost_enqueue(
             .await
             .map_err(pass_sqlx_error)?;
 
-        attachments.push(json!({
-            "footer": version.name,
-            "title": format!("{} / {}", song.title, song.artist),
-            "fields": [
-                {
-                    "short": true,
-                    "title": "SP Levels",
-                    "value": sp_diffs.join(" / "),
+        attachments.push(AttachmentSongInfo {
+            title: format!("{} / {}", song.title, song.artist),
+            footer: version.name,
+            fields: vec![
+                AttachmentSongField {
+                    short: true,
+                    title: "SP Levels".into(),
+                    value: sp_diffs.join(" / "),
                 },
-                {
-                    "short": true,
-                    "title": "DP Levels",
-                    "value": dp_diffs.join(" / "),
+                AttachmentSongField {
+                    short: true,
+                    title: "DP Levels".into(),
+                    value: dp_diffs.join(" / "),
                 },
-                {
-                    "short": true,
-                    "title": "BPM",
-                    "value": if let Some(min_bpm) = song.min_bpm {
+                AttachmentSongField {
+                    short: true,
+                    title: "BPM".into(),
+                    value: if let Some(min_bpm) = song.min_bpm {
                         format!("{min_bpm} - {}", song.max_bpm)
                     } else {
                         song.max_bpm.to_string()
                     },
                 },
             ],
-        }));
+        });
     }
 
-    Ok(Json(json!({
-        "username": "Cathedral",
-        "attachments": attachments,
-    }))
-    .into_response())
-}
-
-fn pass_sqlx_error(err: SqlxError) -> ErrorResponse {
-    (
-        StatusCode::INTERNAL_SERVER_ERROR,
-        Json(ErrorResult {
-            reason: format!("db error: {}", err),
-        }),
-    )
-        .into()
-}
-
-fn pass_not_found_error(subreason: &str) -> ErrorResponse {
-    (
-        StatusCode::NOT_FOUND,
-        Json(ErrorResult {
-            reason: format!("not found: {subreason}"),
-        }),
-    )
-        .into()
-}
-
-fn pass_token_error() -> ErrorResponse {
-    (
-        StatusCode::UNAUTHORIZED,
-        Json(ErrorResult {
-            reason: "unauthorized webhook token".to_string(),
-        }),
-    )
-        .into()
+    Ok(Json(Some(MattermostEnqueueResult {
+        username: "Cathedral".into(),
+        attachments,
+    })))
 }

@@ -6,7 +6,7 @@ mod web;
 use crate::{
     cli::Arguments,
     db::{fetch_title_pair, open_sqlite_file},
-    web::{songs_search, songs_show},
+    web::action::{mattermost_enqueue, songs_search, songs_show},
 };
 
 use std::sync::Arc;
@@ -18,7 +18,6 @@ use axum::{
 };
 use clap::Parser;
 use sqlx::SqlitePool;
-use web::mattermost_enqueue;
 
 #[derive(Debug, Clone)]
 pub struct SharedData {
