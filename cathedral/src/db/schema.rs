@@ -5,39 +5,43 @@ use sqlx::{FromRow, Type as SqlxType};
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Version {
+    #[sqlx(rename = "version_id")]
     pub id: i64,
+    #[sqlx(rename = "version_name")]
     pub name: String,
+    #[sqlx(rename = "version_abbrev")]
     pub abbrev: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
-pub struct SongSummary {
-    pub id: i64,
-    pub version_abbrev: String,
-    pub genre: String,
-    pub title: String,
-    pub artist: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Song {
+    #[sqlx(rename = "song_id")]
     pub id: i64,
-    pub version_id: i64,
+    #[sqlx(rename = "song_genre")]
     pub genre: String,
+    #[sqlx(rename = "song_title")]
     pub title: String,
+    #[sqlx(rename = "song_artist")]
     pub artist: String,
+    #[sqlx(rename = "song_min_bpm")]
     pub min_bpm: Option<i64>,
+    #[sqlx(rename = "song_max_bpm")]
     pub max_bpm: i64,
+    #[sqlx(rename = "song_unlock_info")]
     pub unlock_info: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Diff {
-    pub song_id: i64,
+    #[sqlx(rename = "diff_play_side")]
     pub play_side: PlaySide,
+    #[sqlx(rename = "diff_difficulty")]
     pub difficulty: Difficulty,
+    #[sqlx(rename = "diff_level")]
     pub level: i64,
+    #[sqlx(rename = "diff_note_type")]
     pub note_type: Option<NoteType>,
+    #[sqlx(rename = "diff_scratch_type")]
     pub scratch_type: Option<ScratchType>,
 }
 
@@ -60,7 +64,7 @@ impl Display for PlaySide {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, SqlxType, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, SqlxType, Serialize)]
 #[sqlx(rename_all = "SCREAMING_SNAKE_CASE")]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Difficulty {
