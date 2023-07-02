@@ -1,6 +1,6 @@
 use crate::{
     db::{
-        function::{fetch_diffs, fetch_song, fetch_song_summaries, fetch_version},
+        function::{fetch_diffs, fetch_song, fetch_songs_with_versions},
         schema::PlaySide,
     },
     web::{error::*, schema::*},
@@ -37,18 +37,18 @@ pub async fn songs_search(
     candidate_pairs.sort_by_key(|(d, _)| *d);
     let candidate_ids: Vec<_> = candidate_pairs.iter().map(|(_, id)| *id).collect();
 
-    let rows = fetch_song_summaries(&sd.sqlite_pool, &candidate_ids)
+    let rows = fetch_songs_with_versions(&sd.sqlite_pool, &candidate_ids)
         .await
         .map_err(pass_sqlx_error)?;
     let result_rows = candidate_ids
         .into_iter()
-        .flat_map(|cid| rows.iter().find(|r| r.id == cid))
-        .map(|r| SongsSearchResponse {
-            version_abbrev: r.version_abbrev.to_string(),
-            id: r.id,
-            genre: r.genre.to_string(),
-            title: r.title.to_string(),
-            artist: r.artist.to_string(),
+        .flat_map(|cid| rows.iter().find(|(s, _)| s.id == cid))
+        .map(|(s, v)| SongsSearchResponse {
+            version_abbrev: v.abbrev.to_string(),
+            id: s.id,
+            genre: s.genre.to_string(),
+            title: s.title.to_string(),
+            artist: s.artist.to_string(),
         })
         .collect();
 
@@ -64,7 +64,7 @@ pub async fn songs_show(
         .await
         .map_err(pass_sqlx_error)?
         .ok_or_else(|| pass_not_found_error(&format!("song id {}", query.id)))?;
-    let diffs = fetch_diffs(&sd.sqlite_pool, song.id)
+    let diffs = fetch_diffs(&sd.sqlite_pool, &[song.id])
         .await
         .map_err(pass_sqlx_error)?;
 
@@ -90,7 +90,8 @@ pub async fn mattermost_enqueue(
         .split('\n')
         .map(|q| q.trim())
         .filter(|q| !q.is_empty());
-    let mut attachments = vec![];
+
+    let mut song_ids = vec![];
     for query in queries {
         let mut candidate_distasnce = isize::MAX;
         let mut candidate_id = 0;
@@ -102,27 +103,30 @@ pub async fn mattermost_enqueue(
                 candidate_id = *id;
             }
         }
+        song_ids.push(candidate_id);
+    }
 
-        let song = fetch_song(&sd.sqlite_pool, candidate_id)
-            .await
-            .map_err(pass_sqlx_error)?
-            .ok_or_else(|| pass_not_found_error(&format!("song id {}", candidate_id)))?;
-        let diffs = fetch_diffs(&sd.sqlite_pool, song.id)
-            .await
-            .map_err(pass_sqlx_error)?;
-        let sp_diffs: Vec<_> = diffs
-            .iter()
+    let song_version_pairs = fetch_songs_with_versions(&sd.sqlite_pool, &song_ids)
+        .await
+        .map_err(pass_sqlx_error)?;
+    let all_song_diffs = fetch_diffs(&sd.sqlite_pool, &song_ids)
+        .await
+        .map_err(pass_sqlx_error)?;
+
+    let mut attachments = vec![];
+    for (song, version) in song_version_pairs {
+        // TODO: use Vec<T>::drain_filter after its stabilization
+        let song_diffs = all_song_diffs.iter().filter(|d| d.song_id == song.id);
+        let sp_diffs: Vec<_> = song_diffs
+            .clone()
             .filter(|d| d.play_side == PlaySide::Single)
             .map(|d| format!("{} :level-{}:", d.difficulty.to_emoji_str(), d.level))
             .collect();
-        let dp_diffs: Vec<_> = diffs
-            .iter()
-            .filter(|d| d.play_side == PlaySide::Double)
+        let dp_diffs: Vec<_> = song_diffs
+            .clone()
+            .filter(|d| d.play_side == PlaySide::Single)
             .map(|d| format!("{} :level-{}:", d.difficulty.to_emoji_str(), d.level))
             .collect();
-        let version = fetch_version(&sd.sqlite_pool, song.version_id)
-            .await
-            .map_err(pass_sqlx_error)?;
 
         attachments.push(AttachmentSongInfo {
             title: format!("{} / {}", song.title, song.artist),

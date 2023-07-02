@@ -27,24 +27,6 @@ pub async fn fetch_title_pair(pool: &SqlitePool) -> SqlxResult<Vec<(i64, String)
     Ok(rows)
 }
 
-pub async fn fetch_version(pool: &SqlitePool, id: i64) -> SqlxResult<Version> {
-    let rows = sqlx::query_as(
-        r#"
-        SELECT
-            versions.id AS version_id,
-            versions.name AS version_name,
-            versions.abbrev AS version_abbrev
-        FROM versions
-        WHERE versions.id = ?;
-        "#,
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await?;
-
-    Ok(rows)
-}
-
 pub async fn fetch_songs_with_versions(
     pool: &SqlitePool,
     song_ids: &[i64],

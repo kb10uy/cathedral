@@ -15,6 +15,8 @@ pub struct Version {
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Song {
+    pub version_id: i64,
+
     #[sqlx(rename = "song_id")]
     pub id: i64,
     #[sqlx(rename = "song_genre")]
@@ -33,6 +35,8 @@ pub struct Song {
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Diff {
+    pub song_id: i64,
+
     #[sqlx(rename = "diff_play_side")]
     pub play_side: PlaySide,
     #[sqlx(rename = "diff_difficulty")]
