@@ -12,6 +12,7 @@ use axum::{
     Form, Json,
 };
 use lyricism::{query_delete, query_insert, query_replace, query_substring, Lyricism};
+use rand::prelude::*;
 use tracing::warn;
 
 /// GET /songs/search?q=...
@@ -90,16 +91,43 @@ pub async fn mattermost_enqueue(
 
     let mut song_ids = vec![];
     for query in queries {
-        let mut candidate_distasnce = isize::MAX;
-        let mut candidate_id = 0;
+        let candidate_id = if let Some(filters_str) = query.strip_prefix('?') {
+            // filter query
+            let filters =
+                filters_str
+                    .trim()
+                    .split_ascii_whitespace()
+                    .try_fold(vec![], |mut fs, q| {
+                        fs.push(q.parse()?);
+                        Ok(fs)
+                    });
+            let filters: Vec<FilterQuery> = filters.map_err(pass_filter_query_error)?;
 
-        for (id, title) in &sd.id_song_pairs[..] {
-            let distance = searcher.distance(query, title);
-            if distance < candidate_distasnce {
-                candidate_distasnce = distance;
-                candidate_id = *id;
+            let filtered_ids = query_filter_songs(&sd.sqlite_pool, &filters)
+                .await
+                .map_err(pass_sqlx_error)?;
+
+            let mut rng = thread_rng();
+            let Some((chosen_id,)) = filtered_ids.choose(&mut rng) else {
+                continue;
+            };
+            *chosen_id
+        } else {
+            // song title
+            let mut candidate_distasnce = isize::MAX;
+            let mut candidate_id = 0;
+
+            for (id, title) in &sd.id_song_pairs[..] {
+                let distance = searcher.distance(query, title);
+                if distance < candidate_distasnce {
+                    candidate_distasnce = distance;
+                    candidate_id = *id;
+                }
             }
-        }
+
+            candidate_id
+        };
+
         song_ids.push(candidate_id);
     }
 

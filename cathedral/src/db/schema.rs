@@ -1,7 +1,13 @@
-use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::{
+    fmt::{Display, Formatter, Result as FmtResult},
+    num::ParseIntError,
+    ops::RangeInclusive,
+    str::FromStr,
+};
 
 use serde::Serialize;
 use sqlx::{FromRow, Type as SqlxType};
+use thiserror::Error as ThisError;
 
 #[derive(Debug, Clone, PartialEq, Eq, FromRow, Serialize)]
 pub struct Version {
@@ -141,6 +147,111 @@ impl Display for ScratchType {
             ScratchType::Back => f.write_str("BSS"),
             ScratchType::HellBack => f.write_str("HBSS"),
             ScratchType::Multi => f.write_str("MSS"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FilterQuery {
+    /// `versions.number = ?`
+    VersionNumber(i64),
+
+    /// `diffs.play_side = ?`
+    PlaySide(PlaySide),
+
+    /// `diffs.difficulty = ?`
+    Difficulty(Difficulty),
+
+    /// `diffs.level = ?`
+    Level(i64),
+
+    /// `(songs.min_bpm IS NOT NULL) = ?`
+    Soflan(bool),
+
+    /// `songs.max_bpm BETWEEN ? AND ?`
+    BpmRange(RangeInclusive<i64>),
+}
+
+impl FilterQuery {
+    pub fn where_clause_str(&self) -> &'static str {
+        match self {
+            FilterQuery::VersionNumber(_) => "versions.number = ?",
+            FilterQuery::PlaySide(_) => "diffs.play_side = ?",
+            FilterQuery::Difficulty(_) => "diffs.difficulty = ?",
+            FilterQuery::Level(_) => "diffs.level = ?",
+            FilterQuery::Soflan(_) => "(songs.min_bpm IS NOT NULL) = ?",
+            FilterQuery::BpmRange(_) => "songs.max_bpm BETWEEN ? and ?",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThisError)]
+pub enum FilterQueryError {
+    #[error("invalid query format")]
+    InvalidFormat,
+
+    #[error("unknown query type: {0}")]
+    UnknownQuery(String),
+
+    #[error("invalid query value: {0}")]
+    InvalidValue(String),
+
+    #[error("invalid number")]
+    InvalidNumber(#[from] ParseIntError),
+}
+
+impl FromStr for FilterQuery {
+    type Err = FilterQueryError;
+
+    fn from_str(s: &str) -> Result<FilterQuery, FilterQueryError> {
+        let mut parts = s.split(':');
+        let Some(qtype) = parts.next() else {
+            return Err(FilterQueryError::InvalidFormat);
+        };
+        let value = parts.next().unwrap_or_default();
+
+        match qtype {
+            "v" | "version" => {
+                let number: i64 = value.parse()?;
+                Ok(FilterQuery::VersionNumber(number))
+            }
+            "s" | "side" => match value {
+                "s" | "sp" => Ok(FilterQuery::PlaySide(PlaySide::Single)),
+                "d" | "dp" => Ok(FilterQuery::PlaySide(PlaySide::Double)),
+                _ => Err(FilterQueryError::InvalidValue(value.into())),
+            },
+            "d" | "diff" => match value {
+                "b" | "beginner" => Ok(FilterQuery::Difficulty(Difficulty::Beginner)),
+                "n" | "normal" => Ok(FilterQuery::Difficulty(Difficulty::Normal)),
+                "h" | "hyper" => Ok(FilterQuery::Difficulty(Difficulty::Hyper)),
+                "a" | "another" => Ok(FilterQuery::Difficulty(Difficulty::Another)),
+                "l" | "leggendaria" => Ok(FilterQuery::Difficulty(Difficulty::Leggendaria)),
+                _ => Err(FilterQueryError::InvalidValue(value.into())),
+            },
+            "l" | "level" => {
+                let level: i64 = value.parse()?;
+                Ok(FilterQuery::Level(level))
+            }
+            "f" | "soflan" => match value {
+                "y" | "yes" | "t" | "true" => Ok(FilterQuery::Soflan(true)),
+                "n" | "no" | "f" | "false" => Ok(FilterQuery::Soflan(false)),
+                _ => Err(FilterQueryError::InvalidValue(value.into())),
+            },
+            "b" | "bpm" => {
+                let mut bpms = value.split('-');
+                let lower = bpms
+                    .next()
+                    .map(|x| x.parse())
+                    .transpose()?
+                    .unwrap_or(i64::MIN);
+                let upper = bpms
+                    .next()
+                    .map(|x| x.parse())
+                    .transpose()?
+                    .unwrap_or(i64::MAX);
+                Ok(FilterQuery::BpmRange(lower..=upper))
+            }
+            _ => Err(FilterQueryError::UnknownQuery(qtype.into())),
         }
     }
 }

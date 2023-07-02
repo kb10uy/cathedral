@@ -1,4 +1,4 @@
-use crate::db::schema::{Diff, Song, Version};
+use crate::db::schema::{Diff, FilterQuery, Song, Version};
 
 use std::path::Path;
 
@@ -108,6 +108,42 @@ pub async fn fetch_diffs(pool: &SqlitePool, song_ids: &[i64]) -> SqlxResult<Vec<
     let rows: Vec<Diff> = song_ids
         .iter()
         .fold(sqlx::query_as(&sql), |q, id| q.bind(id))
+        .fetch_all(pool)
+        .await?;
+
+    Ok(rows)
+}
+
+pub async fn query_filter_songs(
+    pool: &SqlitePool,
+    queries: &[FilterQuery],
+) -> SqlxResult<Vec<(i64,)>> {
+    if queries.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let where_clauses: Vec<_> = queries.iter().map(|q| q.where_clause_str()).collect();
+    let sql = format!(
+        r#"
+        SELECT
+            diffs.song_id AS song_id
+        FROM diffs
+        INNER JOIN songs ON diffs.song_id = songs.id
+        INNER JOIN versions ON songs.version_id = versions.id
+        WHERE {};
+        "#,
+        &where_clauses.join(" AND "),
+    );
+    let rows: Vec<(i64,)> = queries
+        .iter()
+        .fold(sqlx::query_as(&sql), |stmt, q| match q {
+            FilterQuery::VersionNumber(n) => stmt.bind(n),
+            FilterQuery::PlaySide(ps) => stmt.bind(ps),
+            FilterQuery::Difficulty(d) => stmt.bind(d),
+            FilterQuery::Level(l) => stmt.bind(l),
+            FilterQuery::Soflan(hs) => stmt.bind(hs),
+            FilterQuery::BpmRange(r) => stmt.bind(r.start()).bind(r.end()),
+        })
         .fetch_all(pool)
         .await?;
 
