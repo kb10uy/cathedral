@@ -142,6 +142,8 @@ pub async fn query_filter_songs(
             FilterQuery::Difficulty(d) => stmt.bind(d),
             FilterQuery::Level(l) => stmt.bind(l),
             FilterQuery::Soflan(hs) => stmt.bind(hs),
+            FilterQuery::Note(nt) => stmt.bind(nt.to_string()),
+            FilterQuery::Scratch(st) => stmt.bind(st.to_string()),
             FilterQuery::BpmRange(r) => stmt.bind(r.start()).bind(r.end()),
         })
         .fetch_all(pool)

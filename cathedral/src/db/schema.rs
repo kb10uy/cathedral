@@ -168,6 +168,12 @@ pub enum FilterQuery {
     /// `(songs.min_bpm IS NOT NULL) = ?`
     Soflan(bool),
 
+    /// `songs.cn_type = ?`
+    Note(NoteType),
+
+    /// `songs.cn_type = ?`
+    Scratch(ScratchType),
+
     /// `songs.max_bpm BETWEEN ? AND ?`
     BpmRange(RangeInclusive<i64>),
 }
@@ -180,6 +186,8 @@ impl FilterQuery {
             FilterQuery::Difficulty(_) => "diffs.difficulty = ?",
             FilterQuery::Level(_) => "diffs.level = ?",
             FilterQuery::Soflan(_) => "(songs.min_bpm IS NOT NULL) = ?",
+            FilterQuery::Note(_) => "songs.cn_type = ?",
+            FilterQuery::Scratch(_) => "songs.bss_type = ?",
             FilterQuery::BpmRange(_) => "songs.max_bpm BETWEEN ? and ?",
         }
     }
@@ -215,7 +223,7 @@ impl FromStr for FilterQuery {
                 let number: i64 = value.parse()?;
                 Ok(FilterQuery::VersionNumber(number))
             }
-            "s" | "side" => match value {
+            "p" | "play" => match value {
                 "s" | "sp" => Ok(FilterQuery::PlaySide(PlaySide::Single)),
                 "d" | "dp" => Ok(FilterQuery::PlaySide(PlaySide::Double)),
                 _ => Err(FilterQueryError::InvalidValue(value.into())),
@@ -237,19 +245,33 @@ impl FromStr for FilterQuery {
                 "n" | "no" | "f" | "false" => Ok(FilterQuery::Soflan(false)),
                 _ => Err(FilterQueryError::InvalidValue(value.into())),
             },
+            "n" | "note" => match value {
+                "c" | "cn" => Ok(FilterQuery::Note(NoteType::Charge)),
+                "h" | "hcn" => Ok(FilterQuery::Note(NoteType::Charge)),
+                _ => Err(FilterQueryError::InvalidValue(value.into())),
+            },
+            "s" | "scratch" => match value {
+                "b" | "bss" => Ok(FilterQuery::Scratch(ScratchType::Back)),
+                "h" | "hbss" => Ok(FilterQuery::Scratch(ScratchType::HellBack)),
+                "m" | "mss" => Ok(FilterQuery::Scratch(ScratchType::Multi)),
+                _ => Err(FilterQueryError::InvalidValue(value.into())),
+            },
             "b" | "bpm" => {
                 let mut bpms = value.split('-');
-                let lower = bpms
-                    .next()
-                    .map(|x| x.parse())
-                    .transpose()?
-                    .unwrap_or(i64::MIN);
-                let upper = bpms
-                    .next()
-                    .map(|x| x.parse())
-                    .transpose()?
-                    .unwrap_or(i64::MAX);
-                Ok(FilterQuery::BpmRange(lower..=upper))
+                let first = bpms.next();
+                let second = bpms.next();
+                let range = match (first, second) {
+                    (Some(fixed), None) => {
+                        let v = fixed.parse()?;
+                        v..=v
+                    }
+                    (Some(""), Some("")) => i64::MIN..=i64::MAX,
+                    (Some(""), Some(upper)) => i64::MIN..=(upper.parse()?),
+                    (Some(lower), Some("")) => (lower.parse()?)..=i64::MAX,
+                    (Some(lower), Some(upper)) => (lower.parse()?)..=(upper.parse()?),
+                    (None, _) => unreachable!("at least one element"),
+                };
+                Ok(FilterQuery::BpmRange(range))
             }
             _ => Err(FilterQueryError::UnknownQuery(qtype.into())),
         }
