@@ -9,4 +9,5 @@ LABEL maintainer="kb10uy"
 COPY --from=builder /usr/local/cargo/bin/cathedral /usr/local/bin/cathedral
 COPY --from=builder /usr/local/cargo/bin/fascination /usr/local/bin/fascination
 
-CMD ["/usr/local/bin/fascination"]
+EXPOSE 40165
+CMD ["/usr/local/bin/cathedral", "-b", "0.0.0.0:40165"]
