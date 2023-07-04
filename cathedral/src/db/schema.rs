@@ -186,8 +186,8 @@ impl FilterQuery {
             FilterQuery::Difficulty(_) => "diffs.difficulty = ?",
             FilterQuery::Level(_) => "diffs.level = ?",
             FilterQuery::Soflan(_) => "(songs.min_bpm IS NOT NULL) = ?",
-            FilterQuery::Note(_) => "songs.cn_type = ?",
-            FilterQuery::Scratch(_) => "songs.bss_type = ?",
+            FilterQuery::Note(_) => "diffs.cn_type = ?",
+            FilterQuery::Scratch(_) => "diffs.bss_type = ?",
             FilterQuery::BpmRange(_) => "songs.max_bpm BETWEEN ? and ?",
         }
     }
@@ -247,7 +247,7 @@ impl FromStr for FilterQuery {
             },
             "n" | "note" => match value {
                 "c" | "cn" => Ok(FilterQuery::Note(NoteType::Charge)),
-                "h" | "hcn" => Ok(FilterQuery::Note(NoteType::Charge)),
+                "h" | "hcn" => Ok(FilterQuery::Note(NoteType::HellCharge)),
                 _ => Err(FilterQueryError::InvalidValue(value.into())),
             },
             "s" | "scratch" => match value {
