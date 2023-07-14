@@ -1,5 +1,5 @@
 [workspace]
-members = ["cathedral", "fascination", "dropkick", "lyricism"]
+members = ["cathedral", "fascination", "lyricism"]
 
 [workspace.dependencies]
 anyhow = "1.0.71"

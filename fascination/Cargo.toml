@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 clap = { workspace = true }
-dropkick = { workspace = true }
 once_cell = { workspace = true }
 scraper = "0.16.0"
 sqlx = { workspace = true }

@@ -9,8 +9,5 @@
 ### `lyricism` - edit distance algorithm
 op.31
 
-### `dropkick` - common data types
-666
-
 ### `fascination` - table importer
 100-200-400
