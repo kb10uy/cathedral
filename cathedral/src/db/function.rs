@@ -39,6 +39,14 @@ pub async fn fetch_songs_with_versions(
         version: Version,
     }
 
+    if song_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let placeholders = repeat("?")
+        .take(song_ids.len())
+        .collect::<Vec<_>>()
+        .join(", ");
     let sql = format!(
         r#"
         SELECT
@@ -54,9 +62,8 @@ pub async fn fetch_songs_with_versions(
             versions.abbrev AS version_abbrev
         FROM songs
         INNER JOIN versions ON songs.version_id = versions.id
-        WHERE songs.id IN ({});
-        "#,
-        &"?,".repeat(song_ids.len())[..(song_ids.len() * 2 - 1)],
+        WHERE songs.id IN ({placeholders});
+        "#
     );
     let rows: Vec<RawRow> = song_ids
         .iter()
@@ -91,6 +98,14 @@ pub async fn fetch_song(pool: &SqlitePool, id: i64) -> SqlxResult<Option<Song>> 
 }
 
 pub async fn fetch_diffs_by_song_ids(pool: &SqlitePool, song_ids: &[i64]) -> SqlxResult<Vec<Diff>> {
+    if song_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let placeholders = repeat("?")
+        .take(song_ids.len())
+        .collect::<Vec<_>>()
+        .join(", ");
     let sql = format!(
         r#"
         SELECT
@@ -101,9 +116,8 @@ pub async fn fetch_diffs_by_song_ids(pool: &SqlitePool, song_ids: &[i64]) -> Sql
             diffs.cn_type AS diff_note_type,
             diffs.bss_type AS diff_scratch_type
         FROM diffs
-        WHERE diffs.song_id IN ({});
-        "#,
-        &"?,".repeat(song_ids.len())[..(song_ids.len() * 2 - 1)],
+        WHERE diffs.song_id IN ({placeholders});
+        "#
     );
     let rows: Vec<Diff> = song_ids
         .iter()
@@ -118,6 +132,10 @@ pub async fn fetch_diffs_by_ids(
     pool: &SqlitePool,
     diff_ids: &[(i64, PlaySide, Difficulty)],
 ) -> SqlxResult<Vec<Diff>> {
+    if diff_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
     let placeholders = repeat("(?, ?, ?)")
         .take(diff_ids.len())
         .collect::<Vec<_>>()
