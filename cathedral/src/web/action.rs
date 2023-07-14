@@ -250,35 +250,35 @@ fn parse_compact_queries(text: &str) -> Vec<([FilterQuery; 3], usize)> {
             ),
             "spn" => (
                 FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::Difficulty(Difficulty::Normal),
             ),
             "sph" => (
                 FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::Difficulty(Difficulty::Hyper),
             ),
             "spa" => (
                 FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::Difficulty(Difficulty::Another),
             ),
             "spl" => (
                 FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::Difficulty(Difficulty::Leggendaria),
             ),
             "dpn" => (
-                FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::PlaySide(PlaySide::Double),
+                FilterQuery::Difficulty(Difficulty::Normal),
             ),
             "dph" => (
-                FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::PlaySide(PlaySide::Double),
+                FilterQuery::Difficulty(Difficulty::Hyper),
             ),
             "dpa" => (
-                FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::PlaySide(PlaySide::Double),
+                FilterQuery::Difficulty(Difficulty::Another),
             ),
             "dpl" => (
-                FilterQuery::PlaySide(PlaySide::Single),
-                FilterQuery::Difficulty(Difficulty::Beginner),
+                FilterQuery::PlaySide(PlaySide::Double),
+                FilterQuery::Difficulty(Difficulty::Leggendaria),
             ),
             _ => continue,
         };
