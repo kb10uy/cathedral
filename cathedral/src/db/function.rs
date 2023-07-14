@@ -150,7 +150,7 @@ pub async fn fetch_diffs_by_ids(
             diffs.cn_type AS diff_note_type,
             diffs.bss_type AS diff_scratch_type
         FROM diffs
-        WHERE diffs.song_id IN ({placeholders});
+        WHERE (diffs.song_id, diffs.play_side, diffs.difficulty) IN ({placeholders});
         "#
     );
     let rows: Vec<Diff> = diff_ids
