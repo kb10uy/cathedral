@@ -41,6 +41,7 @@ pub struct MattermostEnqueueForm {
 #[derive(Debug, Clone, Serialize)]
 pub struct MattermostEnqueueResult {
     pub username: String,
+    pub text: String,
     pub attachments: Vec<AttachmentSongInfo>,
 }
 

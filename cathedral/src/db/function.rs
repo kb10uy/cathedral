@@ -1,6 +1,6 @@
-use crate::db::schema::{Diff, FilterQuery, Song, Version};
+use crate::db::schema::{Diff, Difficulty, FilterQuery, PlaySide, Song, Version};
 
-use std::path::Path;
+use std::{iter::repeat, path::Path};
 
 use sqlx::{FromRow, Result as SqlxResult, SqlitePool};
 
@@ -90,7 +90,7 @@ pub async fn fetch_song(pool: &SqlitePool, id: i64) -> SqlxResult<Option<Song>> 
     Ok(row)
 }
 
-pub async fn fetch_diffs(pool: &SqlitePool, song_ids: &[i64]) -> SqlxResult<Vec<Diff>> {
+pub async fn fetch_diffs_by_song_ids(pool: &SqlitePool, song_ids: &[i64]) -> SqlxResult<Vec<Diff>> {
     let sql = format!(
         r#"
         SELECT
@@ -114,10 +114,43 @@ pub async fn fetch_diffs(pool: &SqlitePool, song_ids: &[i64]) -> SqlxResult<Vec<
     Ok(rows)
 }
 
-pub async fn query_filter_songs(
+pub async fn fetch_diffs_by_ids(
+    pool: &SqlitePool,
+    diff_ids: &[(i64, PlaySide, Difficulty)],
+) -> SqlxResult<Vec<Diff>> {
+    let placeholders = repeat("(?, ?, ?)")
+        .take(diff_ids.len())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let sql = format!(
+        r#"
+        SELECT
+            diffs.song_id AS song_id,
+            diffs.play_side AS diff_play_side,
+            diffs.difficulty AS diff_difficulty,
+            diffs.level AS diff_level,
+            diffs.cn_type AS diff_note_type,
+            diffs.bss_type AS diff_scratch_type
+        FROM diffs
+        WHERE diffs.song_id IN ({placeholders});
+        "#
+    );
+    let rows: Vec<Diff> = diff_ids
+        .iter()
+        .fold(
+            sqlx::query_as(&sql),
+            |q, (song_id, play_side, difficulty)| q.bind(song_id).bind(play_side).bind(difficulty),
+        )
+        .fetch_all(pool)
+        .await?;
+
+    Ok(rows)
+}
+
+pub async fn query_filter_diffs(
     pool: &SqlitePool,
     queries: &[FilterQuery],
-) -> SqlxResult<Vec<(i64,)>> {
+) -> SqlxResult<Vec<(i64, PlaySide, Difficulty)>> {
     if queries.is_empty() {
         return Ok(vec![]);
     }
@@ -126,7 +159,9 @@ pub async fn query_filter_songs(
     let sql = format!(
         r#"
         SELECT
-            diffs.song_id AS song_id
+            diffs.song_id,
+            diffs.play_side,
+            diffs.difficulty
         FROM diffs
         INNER JOIN songs ON diffs.song_id = songs.id
         INNER JOIN versions ON songs.version_id = versions.id
@@ -134,7 +169,7 @@ pub async fn query_filter_songs(
         "#,
         &where_clauses.join(" AND "),
     );
-    let rows: Vec<(i64,)> = queries
+    let rows: Vec<(i64, PlaySide, Difficulty)> = queries
         .iter()
         .fold(sqlx::query_as(&sql), |stmt, q| match q {
             FilterQuery::VersionNumber(n) => stmt.bind(n),
