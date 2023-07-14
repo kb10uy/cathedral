@@ -2,7 +2,7 @@ name: "Release Docker Image"
 
 on:
   release:
-    type: ["created"]
+    type: ["published"]
 
 env:
   REGISTRY: "ghcr.io"
