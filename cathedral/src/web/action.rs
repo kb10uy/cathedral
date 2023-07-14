@@ -164,8 +164,12 @@ pub async fn mattermost_enqueue(
             continue;
         };
         texts.push(format!(
-            "* [{} {}] {} ({})",
-            diff.play_side, diff.difficulty, song.title, version.abbrev
+            "* [{} {} :level-{}:] **{}** ({})",
+            diff.play_side,
+            diff.difficulty.to_emoji_str(),
+            diff.level,
+            song.title,
+            version.abbrev
         ));
     }
 
@@ -279,7 +283,7 @@ fn parse_compact_queries(text: &str) -> Vec<([FilterQuery; 3], usize)> {
             _ => continue,
         };
 
-        let mut level_count = query_text.split('*');
+        let mut level_count = query_text[3..].split('*');
         let Some(level) = level_count.next() else {
             continue;
         };
